@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    @apply bg-navy-950 text-slate-100 font-sans antialiased;
+    background-image: radial-gradient(ellipse at 20% 50%, rgba(30, 58, 110, 0.15) 0%, transparent 60%),
+                      radial-gradient(ellipse at 80% 20%, rgba(212, 175, 55, 0.04) 0%, transparent 50%);
+    min-height: 100vh;
+  }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-navy-900; }
+  ::-webkit-scrollbar-thumb { @apply bg-navy-600 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-gold-500; }
+}
+
+@layer components {
+  .card {
+    @apply bg-navy-900 border border-navy-700 rounded-xl p-6;
+    background: linear-gradient(135deg, rgba(15, 32, 64, 0.9) 0%, rgba(10, 22, 40, 0.95) 100%);
+    backdrop-filter: blur(12px);
+  }
+  .card-hover {
+    @apply card transition-all duration-300 hover:border-gold-500/40 hover:shadow-lg;
+    &:hover { box-shadow: 0 8px 32px rgba(212, 175, 55, 0.08); }
+  }
+  .btn-primary {
+    @apply bg-gold-500 hover:bg-gold-400 text-navy-950 font-semibold px-5 py-2.5 rounded-lg
+           transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed
+           active:scale-95;
+  }
+  .btn-secondary {
+    @apply bg-navy-800 hover:bg-navy-700 border border-navy-600 hover:border-navy-500
+           text-slate-200 font-medium px-5 py-2.5 rounded-lg transition-all duration-200
+           flex items-center gap-2 active:scale-95;
+  }
+  .btn-ghost {
+    @apply text-slate-400 hover:text-slate-100 hover:bg-navy-800 px-3 py-2 rounded-lg
+           transition-all duration-200 flex items-center gap-2;
+  }
+  .input {
+    @apply w-full bg-navy-800 border border-navy-600 rounded-lg px-4 py-2.5 text-slate-100
+           placeholder-slate-500 focus:outline-none focus:border-gold-500 focus:ring-1
+           focus:ring-gold-500/30 transition-all duration-200;
+  }
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  .badge-gold { @apply badge bg-gold-500/10 text-gold-400 border border-gold-500/20; }
+  .badge-blue { @apply badge bg-blue-500/10 text-blue-400 border border-blue-500/20; }
+  .badge-green { @apply badge bg-emerald-500/10 text-emerald-400 border border-emerald-500/20; }
+  .badge-purple { @apply badge bg-purple-500/10 text-purple-400 border border-purple-500/20; }
+  .skeleton {
+    @apply bg-navy-800 rounded-lg animate-pulse;
+    background: linear-gradient(90deg, #0f2040 25%, #162a54 50%, #0f2040 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+  .glass {
+    background: rgba(15, 32, 64, 0.6);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(212, 175, 55, 0.1);
+  }
+  .nav-link {
+    @apply flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-slate-400 hover:text-slate-100
+           hover:bg-navy-800 transition-all duration-200 text-sm font-medium;
+  }
+  .nav-link-active {
+    @apply flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-gold-400 bg-gold-500/10
+           border border-gold-500/20 text-sm font-semibold;
+  }
+  .section-title {
+    @apply text-2xl font-bold text-slate-100;
+  }
+  .section-subtitle {
+    @apply text-slate-400 text-sm mt-1;
+  }
+  .divider {
+    @apply border-t border-navy-700;
+  }
+  .prose-legal {
+    @apply text-slate-300 leading-relaxed;
+  }
+  .prose-legal h1, .prose-legal h2, .prose-legal h3 {
+    @apply text-slate-100 font-semibold mt-4 mb-2;
+  }
+  .prose-legal ul { @apply list-disc list-inside space-y-1 my-2; }
+  .prose-legal ol { @apply list-decimal list-inside space-y-1 my-2; }
+  .prose-legal strong { @apply text-gold-400 font-semibold; }
+  .prose-legal p { @apply mb-3; }
+  .prose-legal code { @apply bg-navy-800 text-gold-400 px-1 py-0.5 rounded text-sm; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
