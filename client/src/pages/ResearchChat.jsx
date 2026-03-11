@@ -135,6 +135,7 @@ export default function ResearchChat() {
         setMessages(m => [...m, { role: 'assistant', content: '', sources: [], streaming: true }]);
 
         const token = localStorage.getItem('JurisAi_token');
+        // Call the Express API directly on port 5000 (same as axios baseURL)
         const url = `https://jurisai-rag-ai-legal-research-assistant.onrender.com/api/query/stream?bookName=${encodeURIComponent(selectedDoc.bookName)}&query=${encodeURIComponent(userQuery)}&topK=5`;
 
         const controller = new AbortController();
