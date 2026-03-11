@@ -5,9 +5,13 @@ from collections import defaultdict
 from rank_bm25 import BM25Okapi
 from sentence_transformers import CrossEncoder
 from groq import Groq
+from google import genai
+from google.genai import types as genai_types
 from src.config import (
     GROQ_API_KEY,
     GROQ_MODEL,
+    GOOGLE_API_KEY,
+    GOOGLE_MODEL,
     RERANKER_MODEL,
     KEYWORD_WEIGHT,
     SEMANTIC_WEIGHT,
@@ -65,6 +69,10 @@ class Retriever:
         self.embedder = embedder or Embedder()
         self.vector_store = vector_store or VectorStore()
         self.client = Groq(api_key=GROQ_API_KEY)
+        if GOOGLE_API_KEY:
+            self.google_client = genai.Client(api_key=GOOGLE_API_KEY)
+        else:
+            self.google_client = None
         print(f"Loading cross-encoder reranker: {RERANKER_MODEL}")
         self.reranker = CrossEncoder(RERANKER_MODEL)
         print("Reranker ready")
@@ -208,8 +216,25 @@ INSTRUCTIONS:
             )
             answer = _clean_answer(response.choices[0].message.content)
         except Exception as e:
-            print(f"Answer generation failed: {e}")
-            answer = "Sorry, I encountered an error generating the answer."
+            print(f"Groq generation failed: {e}")
+            if self.google_client:
+                try:
+                    print("Falling back to Google GenAI...")
+                    google_response = self.google_client.models.generate_content(
+                        model=GOOGLE_MODEL,
+                        contents=user_message,
+                        config=genai_types.GenerateContentConfig(
+                            system_instruction=SYSTEM_PROMPT,
+                            temperature=0,
+                            max_output_tokens=4096,
+                        ),
+                    )
+                    answer = _clean_answer(google_response.text)
+                except Exception as ge:
+                    print(f"Google GenAI fallback also failed: {ge}")
+                    answer = "Sorry, I encountered an error generating the answer."
+            else:
+                answer = "Sorry, I encountered an error generating the answer."
 
         return {
             "query": query,

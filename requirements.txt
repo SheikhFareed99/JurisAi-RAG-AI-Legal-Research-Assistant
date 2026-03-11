@@ -10,6 +10,7 @@ Pillow
 numpy
 sentence-transformers
 groq
+google-genai
 langchain
 langchain-core
 langchain-community

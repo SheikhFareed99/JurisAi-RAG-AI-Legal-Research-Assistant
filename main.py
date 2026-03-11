@@ -125,25 +125,52 @@ INSTRUCTIONS:
 - If documents lack the needed information, clearly state that and do NOT invent any legal information"""
 
             from groq import Groq
-            from src.config import GROQ_API_KEY, GROQ_MODEL
+            from google.genai import types as genai_types
+            from src.config import GROQ_API_KEY, GROQ_MODEL, GOOGLE_MODEL
             from src.retriever import SYSTEM_PROMPT
 
+            groq_failed = False
             client_groq = Groq(api_key=GROQ_API_KEY)
-            stream = client_groq.chat.completions.create(
-                model=GROQ_MODEL,
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": user_message},
-                ],
-                temperature=0,
-                max_tokens=4096,
-                stream=True,
-            )
+            try:
+                stream = client_groq.chat.completions.create(
+                    model=GROQ_MODEL,
+                    messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": user_message},
+                    ],
+                    temperature=0,
+                    max_tokens=4096,
+                    stream=True,
+                )
 
-            for chunk_delta in stream:
-                token = chunk_delta.choices[0].delta.content
-                if token:
-                    yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
+                for chunk_delta in stream:
+                    token = chunk_delta.choices[0].delta.content
+                    if token:
+                        yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
+            except Exception as groq_err:
+                print(f"Groq streaming failed: {groq_err}")
+                groq_failed = True
+
+            if groq_failed and retriever.google_client:
+                try:
+                    print("Falling back to Google GenAI for streaming...")
+                    google_response = retriever.google_client.models.generate_content_stream(
+                        model=GOOGLE_MODEL,
+                        contents=user_message,
+                        config=genai_types.GenerateContentConfig(
+                            system_instruction=SYSTEM_PROMPT,
+                            temperature=0,
+                            max_output_tokens=4096,
+                        ),
+                    )
+                    for chunk_delta in google_response:
+                        if chunk_delta.text:
+                            yield f"data: {json.dumps({'type': 'token', 'content': chunk_delta.text})}\n\n"
+                except Exception as google_err:
+                    print(f"Google GenAI fallback also failed: {google_err}")
+                    yield f"data: {json.dumps({'type': 'error', 'content': str(google_err)})}\n\n"
+            elif groq_failed:
+                yield f"data: {json.dumps({'type': 'error', 'content': 'LLM service is currently unavailable. Please try again later.'})}\n\n"
 
             yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
