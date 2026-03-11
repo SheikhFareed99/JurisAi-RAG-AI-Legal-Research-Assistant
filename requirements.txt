@@ -17,3 +17,4 @@ langchain-text-splitters
 python-magic
 python-multipart
 requests
+rank-bm25
