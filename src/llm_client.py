@@ -9,6 +9,18 @@ from typing import List, Dict, Generator
 from src.config import GROQ_API_KEY, GROQ_MODEL, GOOGLE_API_KEY, GOOGLE_MODEL
 
 
+def _messages_to_google_prompt(messages: List[Dict[str, str]]) -> str:
+    prompt_parts = []
+    for msg in messages:
+        role = msg["role"]
+        content = msg["content"]
+        if role == "system":
+            prompt_parts.append(f"[System Instructions]\n{content}\n")
+        else:
+            prompt_parts.append(content)
+    return "\n".join(prompt_parts)
+
+
 def _call_groq(messages: List[Dict[str, str]], temperature: float, max_tokens: int) -> str:
     from groq import Groq
 
@@ -28,17 +40,8 @@ def _call_google(messages: List[Dict[str, str]], temperature: float, max_tokens:
     genai.configure(api_key=GOOGLE_API_KEY)
     model = genai.GenerativeModel(GOOGLE_MODEL)
 
-    prompt_parts = []
-    for msg in messages:
-        role = msg["role"]
-        content = msg["content"]
-        if role == "system":
-            prompt_parts.append(f"[System Instructions]\n{content}\n")
-        else:
-            prompt_parts.append(content)
-
     response = model.generate_content(
-        "\n".join(prompt_parts),
+        _messages_to_google_prompt(messages),
         generation_config=genai.types.GenerationConfig(
             temperature=temperature,
             max_output_tokens=max_tokens,
@@ -87,9 +90,8 @@ def _stream_groq(messages: List[Dict[str, str]], temperature: float, max_tokens:
         stream=True,
     )
     for chunk in stream:
-        token = chunk.choices[0].delta.content
-        if token:
-            yield token
+        if chunk.choices and chunk.choices[0].delta.content:
+            yield chunk.choices[0].delta.content
 
 
 def _stream_google(messages: List[Dict[str, str]], temperature: float, max_tokens: int) -> Generator[str, None, None]:
@@ -98,17 +100,8 @@ def _stream_google(messages: List[Dict[str, str]], temperature: float, max_token
     genai.configure(api_key=GOOGLE_API_KEY)
     model = genai.GenerativeModel(GOOGLE_MODEL)
 
-    prompt_parts = []
-    for msg in messages:
-        role = msg["role"]
-        content = msg["content"]
-        if role == "system":
-            prompt_parts.append(f"[System Instructions]\n{content}\n")
-        else:
-            prompt_parts.append(content)
-
     response = model.generate_content(
-        "\n".join(prompt_parts),
+        _messages_to_google_prompt(messages),
         generation_config=genai.types.GenerationConfig(
             temperature=temperature,
             max_output_tokens=max_tokens,
