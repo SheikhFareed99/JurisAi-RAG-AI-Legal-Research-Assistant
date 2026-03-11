@@ -1,13 +1,11 @@
 from typing import List
-from groq import Groq
-from src.config import GROQ_API_KEY, GROQ_MODEL
+from src.llm_client import chat_completion
 
 
 class ContentSummarizer:
 
     def __init__(self):
-        self.client = Groq(api_key=GROQ_API_KEY)
-        self.model = GROQ_MODEL
+        pass
 
     def _summarize(self, text: str, tables: List[str], images: List[str]) -> str:
         prompt = f"""You are creating a searchable description for document content retrieval.
@@ -39,13 +37,11 @@ Make it detailed and searchable — prioritize findability over brevity.
 
 SEARCHABLE DESCRIPTION:"""
 
-        response = self.client.chat.completions.create(
-            model=self.model,
+        return chat_completion(
             messages=[{"role": "user", "content": prompt}],
             temperature=0,
             max_tokens=1024,
         )
-        return response.choices[0].message.content
 
     def summarize_chunk(self, chunk_data: dict) -> str:
         text = chunk_data["text"]

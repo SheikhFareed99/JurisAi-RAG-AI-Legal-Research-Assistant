@@ -4,10 +4,8 @@ from typing import List, Dict, Any
 from collections import defaultdict
 from rank_bm25 import BM25Okapi
 from sentence_transformers import CrossEncoder
-from groq import Groq
+from src.llm_client import chat_completion
 from src.config import (
-    GROQ_API_KEY,
-    GROQ_MODEL,
     RERANKER_MODEL,
     KEYWORD_WEIGHT,
     SEMANTIC_WEIGHT,
@@ -64,7 +62,6 @@ class Retriever:
     def __init__(self, embedder: Embedder = None, vector_store: VectorStore = None):
         self.embedder = embedder or Embedder()
         self.vector_store = vector_store or VectorStore()
-        self.client = Groq(api_key=GROQ_API_KEY)
         print(f"Loading cross-encoder reranker: {RERANKER_MODEL}")
         self.reranker = CrossEncoder(RERANKER_MODEL)
         print("Reranker ready")
@@ -197,8 +194,7 @@ INSTRUCTIONS:
 - If documents lack the needed information, clearly state that and do NOT invent any legal information"""
 
         try:
-            response = self.client.chat.completions.create(
-                model=GROQ_MODEL,
+            answer = chat_completion(
                 messages=[
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": user_message},
@@ -206,7 +202,7 @@ INSTRUCTIONS:
                 temperature=0,
                 max_tokens=4096,
             )
-            answer = _clean_answer(response.choices[0].message.content)
+            answer = _clean_answer(answer)
         except Exception as e:
             print(f"Answer generation failed: {e}")
             answer = "Sorry, I encountered an error generating the answer."

@@ -5,6 +5,7 @@ load_dotenv()
 
 PINECONE_API_KEY = os.getenv("pine_corn_api")
 GROQ_API_KEY = os.getenv("groq_api")
+GOOGLE_API_KEY = os.getenv("google_api")
 
 PINECONE_INDEX_NAME = "smart-classroom"
 PINECONE_CLOUD = "aws"
@@ -14,6 +15,7 @@ EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 EMBEDDING_DIMENSION = 384
 
 GROQ_MODEL = "llama-3.3-70b-versatile"
+GOOGLE_MODEL = "gemini-2.0-flash"
 
 CHUNK_MAX_CHARS = 1000
 CHUNK_NEW_AFTER = 800
