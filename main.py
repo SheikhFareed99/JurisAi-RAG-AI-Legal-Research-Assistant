@@ -126,7 +126,6 @@ INSTRUCTIONS:
 
             from groq import Groq
             from google import genai
-            from google.genai import types
             from src.config import GROQ_API_KEY, GROQ_MODEL, GOOGLE_API_KEY_1, GOOGLE_API_KEY_2
             from src.retriever import SYSTEM_PROMPT
             

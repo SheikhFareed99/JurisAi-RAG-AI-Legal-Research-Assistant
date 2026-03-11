@@ -73,4 +73,5 @@ jobs:
         with:
           app-name: 'JurisAi'
           slot-name: 'Production'
+          startup-command: 'gunicorn --bind=0.0.0.0:8000 --timeout 600 -k uvicorn.workers.UvicornWorker main:app'
           

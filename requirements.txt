@@ -19,3 +19,4 @@ python-multipart
 requests
 rank-bm25
 google-genai
+gunicorn
