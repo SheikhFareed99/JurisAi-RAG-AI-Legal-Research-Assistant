@@ -124,26 +124,18 @@ INSTRUCTIONS:
 - End with a concise 'Key Takeaway' in one sentence
 - If documents lack the needed information, clearly state that and do NOT invent any legal information"""
 
-            from groq import Groq
-            from src.config import GROQ_API_KEY, GROQ_MODEL
+            from src.llm_client import chat_completion_stream
             from src.retriever import SYSTEM_PROMPT
 
-            client_groq = Groq(api_key=GROQ_API_KEY)
-            stream = client_groq.chat.completions.create(
-                model=GROQ_MODEL,
+            for token in chat_completion_stream(
                 messages=[
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": user_message},
                 ],
                 temperature=0,
                 max_tokens=4096,
-                stream=True,
-            )
-
-            for chunk_delta in stream:
-                token = chunk_delta.choices[0].delta.content
-                if token:
-                    yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
+            ):
+                yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
 
             yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
