@@ -197,48 +197,17 @@ INSTRUCTIONS:
 - If documents lack the needed information, clearly state that and do NOT invent any legal information"""
 
         try:
-            from google import genai
-            from src.config import GOOGLE_API_KEY_1, GOOGLE_API_KEY_2
-            
             prompt = f"SYSTEM:\n{SYSTEM_PROMPT}\n\nUSER:\n{user_message}"
-            answer = None
-            
-            if GOOGLE_API_KEY_1 and not answer:
-                try:
-                    client_g1 = genai.Client(api_key=GOOGLE_API_KEY_1)
-                    resp = client_g1.models.generate_content(
-                        model="gemini-3-flash-preview",
-                        contents=prompt,
-                    )
-                    if resp and resp.text:
-                        answer = _clean_answer(resp.text)
-                except Exception as e:
-                    print(f"Fallback: Google 1 failed: {e}")
-                    
-            if GOOGLE_API_KEY_2 and not answer:
-                try:
-                    client_g2 = genai.Client(api_key=GOOGLE_API_KEY_2)
-                    resp = client_g2.models.generate_content(
-                        model="gemini-3-flash-preview",
-                        contents=prompt,
-                    )
-                    if resp and resp.text:
-                        answer = _clean_answer(resp.text)
-                except Exception as e:
-                    print(f"Fallback: Google 2 failed: {e}")
-            
-            if not answer:
-                print("Fallback: Using Groq")
-                response = self.client.chat.completions.create(
-                    model=GROQ_MODEL,
-                    messages=[
-                        {"role": "system", "content": SYSTEM_PROMPT},
-                        {"role": "user", "content": user_message},
-                    ],
-                    temperature=0,
-                    max_tokens=4096,
-                )
-                answer = _clean_answer(response.choices[0].message.content)
+            response = self.client.chat.completions.create(
+                model=GROQ_MODEL,
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": user_message},
+                ],
+                temperature=0,
+                max_tokens=4096,
+            )
+            answer = _clean_answer(response.choices[0].message.content)
         except Exception as e:
             print(f"Answer generation failed: {e}")
             answer = "Sorry, I encountered an error generating the answer."
