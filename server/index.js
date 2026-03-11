@@ -10,7 +10,7 @@ const historyRoutes = require('./routes/history');
 
 const app = express();
 
-app.use(cors({ origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'], credentials: true }));
+app.use(cors());
 app.use(express.json());
 
 // Routes
@@ -25,12 +25,12 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok', service: 'LexAI Se
 mongoose
   .connect(process.env.MONGO_URI, { dbName: 'lexai' })
   .then(() => {
-    console.log('✅ MongoDB connected');
+    console.log(' MongoDB connected');
     app.listen(process.env.PORT || 5000, () =>
-      console.log(`🚀 LexAI server running on port ${process.env.PORT || 5000}`)
+      console.log(` JurisAi server running on port ${process.env.PORT || 5000}`)
     );
   })
   .catch((err) => {
-    console.error('❌ MongoDB connection error:', err.message);
+    console.error(' MongoDB connection error:', err.message);
     process.exit(1);
   });
