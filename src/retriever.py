@@ -222,8 +222,9 @@ INSTRUCTIONS:
                     print("Falling back to Google GenAI...")
                     google_response = self.google_client.models.generate_content(
                         model=GOOGLE_MODEL,
-                        contents=f"{SYSTEM_PROMPT}\n\n{user_message}",
+                        contents=user_message,
                         config=genai_types.GenerateContentConfig(
+                            system_instruction=SYSTEM_PROMPT,
                             temperature=0,
                             max_output_tokens=4096,
                         ),

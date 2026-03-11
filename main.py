@@ -125,9 +125,8 @@ INSTRUCTIONS:
 - If documents lack the needed information, clearly state that and do NOT invent any legal information"""
 
             from groq import Groq
-            from google import genai
             from google.genai import types as genai_types
-            from src.config import GROQ_API_KEY, GROQ_MODEL, GOOGLE_API_KEY, GOOGLE_MODEL
+            from src.config import GROQ_API_KEY, GROQ_MODEL, GOOGLE_MODEL
             from src.retriever import SYSTEM_PROMPT
 
             groq_failed = False
@@ -152,14 +151,14 @@ INSTRUCTIONS:
                 print(f"Groq streaming failed: {groq_err}")
                 groq_failed = True
 
-            if groq_failed and GOOGLE_API_KEY:
+            if groq_failed and retriever.google_client:
                 try:
                     print("Falling back to Google GenAI for streaming...")
-                    google_client = genai.Client(api_key=GOOGLE_API_KEY)
-                    google_response = google_client.models.generate_content_stream(
+                    google_response = retriever.google_client.models.generate_content_stream(
                         model=GOOGLE_MODEL,
-                        contents=f"{SYSTEM_PROMPT}\n\n{user_message}",
+                        contents=user_message,
                         config=genai_types.GenerateContentConfig(
+                            system_instruction=SYSTEM_PROMPT,
                             temperature=0,
                             max_output_tokens=4096,
                         ),
