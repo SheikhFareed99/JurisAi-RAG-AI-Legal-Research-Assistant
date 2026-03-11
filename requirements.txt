@@ -2,13 +2,13 @@ fastapi
 uvicorn
 python-dotenv
 pymupdf
+pinecone
 easyocr
 python-pptx
 docx2txt
 Pillow
 numpy
 sentence-transformers
-pinecone-client
 groq
 langchain
 langchain-core
