@@ -125,76 +125,25 @@ INSTRUCTIONS:
 - If documents lack the needed information, clearly state that and do NOT invent any legal information"""
 
             from groq import Groq
-            from google import genai
-            from google.genai import types
-            from src.config import GROQ_API_KEY, GROQ_MODEL, GOOGLE_API_KEY_1, GOOGLE_API_KEY_2
+            from src.config import GROQ_API_KEY, GROQ_MODEL
             from src.retriever import SYSTEM_PROMPT
-            
-            def get_llm_stream():
-                prompt = f"SYSTEM:\n{SYSTEM_PROMPT}\n\nUSER:\n{user_message}"
-                
-                # Attempt Google Key 1
-                if GOOGLE_API_KEY_1:
-                    try:
-                        client_g1 = genai.Client(api_key=GOOGLE_API_KEY_1)
-                        response = client_g1.models.generate_content_stream(
-                            model="gemini-3-flash-preview", # or fallback to gemini-2.0-flash if preview not present but trying as user requested
-                            contents=prompt,
-                        )
-                        iterator = iter(response)
-                        first_chunk = next(iterator)
-                        
-                        def g1_stream():
-                            yield first_chunk.text
-                            for chunk in iterator:
-                                yield chunk.text
-                        return g1_stream()
-                    except Exception as e:
-                        print(f"LLM Fallback: Google Key 1 failed ({e})")
-                
-                # Attempt Google Key 2
-                if GOOGLE_API_KEY_2:
-                    try:
-                        client_g2 = genai.Client(api_key=GOOGLE_API_KEY_2)
-                        response = client_g2.models.generate_content_stream(
-                            model="gemini-3-flash-preview",
-                            contents=prompt,
-                        )
-                        iterator = iter(response)
-                        first_chunk = next(iterator)
-                        
-                        def g2_stream():
-                            yield first_chunk.text
-                            for chunk in iterator:
-                                yield chunk.text
-                        return g2_stream()
-                    except Exception as e:
-                        print(f"LLM Fallback: Google Key 2 failed ({e})")
 
-                # Fallback to Groq
-                print("LLM Fallback: Using Groq")
-                client_groq = Groq(api_key=GROQ_API_KEY)
-                stream = client_groq.chat.completions.create(
-                    model=GROQ_MODEL,
-                    messages=[
-                        {"role": "system", "content": SYSTEM_PROMPT},
-                        {"role": "user", "content": user_message},
-                    ],
-                    temperature=0,
-                    max_tokens=4096,
-                    stream=True,
-                )
-                
-                def groq_stream():
-                    for chunk_delta in stream:
-                        token = chunk_delta.choices[0].delta.content
-                        if token:
-                            yield token
-                return groq_stream()
+            client_groq = Groq(api_key=GROQ_API_KEY)
+            stream = client_groq.chat.completions.create(
+                model=GROQ_MODEL,
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": user_message},
+                ],
+                temperature=0,
+                max_tokens=4096,
+                stream=True,
+            )
 
-            llm_stream = get_llm_stream()
-            for token in llm_stream:
-                yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
+            for chunk_delta in stream:
+                token = chunk_delta.choices[0].delta.content
+                if token:
+                    yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
 
             yield f"data: {json.dumps({'type': 'done'})}\n\n"
 

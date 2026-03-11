@@ -5,8 +5,6 @@ load_dotenv()
 
 PINECONE_API_KEY = os.getenv("pine_corn_api")
 GROQ_API_KEY = os.getenv("groq_api")
-GOOGLE_API_KEY_1 = os.getenv("google_api_1")
-GOOGLE_API_KEY_2 = os.getenv("google_api_2")
 
 PINECONE_INDEX_NAME = "smart-classroom"
 PINECONE_CLOUD = "aws"
