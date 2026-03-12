@@ -272,8 +272,8 @@ export default function ResearchChat() {
                         <div className="flex items-start gap-3 rounded-lg bg-gold-500/10 border border-gold-500/20 px-4 py-3">
                             <Info size={18} className="text-gold-400 flex-shrink-0 mt-0.5" />
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gold-400">First query may be slow</p>
-                                <p className="text-xs text-slate-400 mt-0.5">Our AI model may take up to a minute to respond on the first query as it wakes up. After that, responses will be much faster.</p>
+                                <p className="text-sm font-medium text-gold-400">The AI model may take a moment to respond</p>
+                                <p className="text-xs text-slate-400 mt-0.5">This app runs on a free-tier server that goes to sleep after periods of inactivity. Your first query may take up to 60 seconds while the server wakes up. Responses will be much faster after the initial warm-up.</p>
                             </div>
                             <button onClick={() => { setShowBanner(false); sessionStorage.setItem('JurisAi_chat_banner_dismissed', '1'); }} className="text-slate-500 hover:text-slate-300 transition-colors flex-shrink-0">
                                 <X size={16} />

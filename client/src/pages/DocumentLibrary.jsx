@@ -198,8 +198,8 @@ export default function DocumentLibrary() {
                 <div className="mb-4 flex items-start gap-3 rounded-lg bg-gold-500/10 border border-gold-500/20 px-4 py-3">
                     <Info size={18} className="text-gold-400 flex-shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gold-400">First-time processing may be slow</p>
-                        <p className="text-xs text-slate-400 mt-0.5">Our AI model may take up to a minute to wake up on the first request. Subsequent operations will be much faster. Please be patient!</p>
+                        <p className="text-sm font-medium text-gold-400">Document processing may take a moment</p>
+                        <p className="text-xs text-slate-400 mt-0.5">This app runs on a free-tier server that sleeps after periods of inactivity. Your first upload or indexing request may take up to 60 seconds while the server wakes up. Subsequent operations will be noticeably faster.</p>
                     </div>
                     <button onClick={() => { setShowBanner(false); sessionStorage.setItem('JurisAi_lib_banner_dismissed', '1'); }} className="text-slate-500 hover:text-slate-300 transition-colors flex-shrink-0">
                         <X size={16} />

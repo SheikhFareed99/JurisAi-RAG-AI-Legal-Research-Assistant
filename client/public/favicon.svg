@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="32" fill="#0f2444"/>
+  <!-- Scales beam -->
+  <rect x="30" y="14" width="4" height="30" rx="2" fill="#d4af37"/>
+  <!-- Center top post -->
+  <rect x="28" y="12" width="8" height="4" rx="2" fill="#d4af37"/>
+  <!-- Left arm -->
+  <rect x="10" y="22" width="22" height="3" rx="1.5" fill="#d4af37"/>
+  <!-- Right arm -->
+  <rect x="32" y="22" width="22" height="3" rx="1.5" fill="#d4af37"/>
+  <!-- Left pan -->
+  <ellipse cx="21" cy="33" rx="9" ry="3" fill="#d4af37" opacity="0.9"/>
+  <!-- Right pan -->
+  <ellipse cx="43" cy="36" rx="9" ry="3" fill="#d4af37" opacity="0.7"/>
+  <!-- Left pan strings -->
+  <line x1="13" y1="25" x2="13" y2="33" stroke="#d4af37" stroke-width="1.5"/>
+  <line x1="29" y1="25" x2="29" y2="33" stroke="#d4af37" stroke-width="1.5"/>
+  <!-- Right pan strings -->
+  <line x1="35" y1="25" x2="35" y2="36" stroke="#d4af37" stroke-width="1.5"/>
+  <line x1="51" y1="25" x2="51" y2="36" stroke="#d4af37" stroke-width="1.5"/>
+  <!-- Base -->
+  <rect x="22" y="44" width="20" height="3" rx="1.5" fill="#d4af37"/>
+  <rect x="18" y="47" width="28" height="3" rx="1.5" fill="#d4af37"/>
+</svg>

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
-import { Scale, Eye, EyeOff, Loader } from 'lucide-react';
+import { Scale, Eye, EyeOff, Loader, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AuthPage() {
@@ -99,6 +99,14 @@ export default function AuthPage() {
                             onClick={() => setMode(mode === 'login' ? 'register' : 'login')}>
                             {mode === 'login' ? 'Sign up' : 'Sign in'}
                         </button>
+                    </p>
+                </div>
+
+                {/* Free-tier cold-start notice */}
+                <div className="mt-4 flex items-start gap-3 rounded-lg bg-navy-800/80 border border-navy-600 px-4 py-3">
+                    <Info size={16} className="text-gold-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                        <span className="text-gold-400 font-medium">Heads up:</span> This app is deployed on a free-tier server that goes to sleep after periods of inactivity. If the server is asleep, signing in or creating an account may take up to 60 seconds on the first attempt. Please wait — do not refresh the page.
                     </p>
                 </div>
             </div>
