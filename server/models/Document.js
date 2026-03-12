@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const documentSchema = new mongoose.Schema(
     {
         title: { type: String, required: true, trim: true },
-        bookName: { type: String, required: true, unique: true, trim: true },
+        bookName: { type: String, required: true, trim: true },
         azureUrl: { type: String, required: true },
         category: {
             type: String,
@@ -17,5 +17,7 @@ const documentSchema = new mongoose.Schema(
     },
     { timestamps: true }
 );
+
+documentSchema.index({ bookName: 1, uploadedBy: 1 }, { unique: true });
 
 module.exports = mongoose.model('Document', documentSchema);

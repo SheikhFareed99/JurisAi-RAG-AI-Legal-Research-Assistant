@@ -6,7 +6,6 @@ const path = require('path');
 const authMiddleware = require('../middleware/auth');
 const Document = require('../models/Document');
 
-// Multer — store in memory (no disk), max 50MB
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 50 * 1024 * 1024 },
@@ -18,7 +17,6 @@ const upload = multer({
     },
 });
 
-// Upload file to Azure Blob Storage, return public URL
 async function uploadToAzure(buffer, originalName) {
     const blobServiceClient = BlobServiceClient.fromConnectionString(
         process.env.AZURE_CONNECTION_STRING
@@ -36,7 +34,6 @@ async function uploadToAzure(buffer, originalName) {
     return blockBlobClient.url;
 }
 
-// GET all documents for authenticated user
 router.get('/', authMiddleware, async (req, res) => {
     try {
         const docs = await Document.find({ uploadedBy: req.user.id }).sort({ createdAt: -1 });
@@ -46,7 +43,6 @@ router.get('/', authMiddleware, async (req, res) => {
     }
 });
 
-// POST upload file → Azure → FastAPI ingest
 router.post('/', authMiddleware, upload.single('file'), async (req, res) => {
     try {
         const { title, category, bookName } = req.body;
@@ -54,10 +50,7 @@ router.post('/', authMiddleware, upload.single('file'), async (req, res) => {
         if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
         if (!title || !bookName) return res.status(400).json({ message: 'title and bookName are required' });
 
-        // 1. Upload file to Azure Blob
         const azureUrl = await uploadToAzure(req.file.buffer, req.file.originalname);
-
-        // 2. Save metadata to MongoDB
         const doc = await Document.create({
             title,
             bookName,
@@ -66,10 +59,9 @@ router.post('/', authMiddleware, upload.single('file'), async (req, res) => {
             uploadedBy: req.user.id,
             ingested: false,
         });
-
-        // 3. Trigger FastAPI ingestion asynchronously
+        const namespace = `${req.user.id}_${bookName}`;
         axios
-            .post(`${process.env.FASTAPI_URL}/ingest`, { url: azureUrl, book_name: bookName })
+            .post(`${process.env.FASTAPI_URL}/ingest`, { url: azureUrl, book_name: namespace })
             .then(async (fastapiRes) => {
                 const chunks = fastapiRes.data?.total_chunks || fastapiRes.data?.chunks_stored || 0;
                 await Document.findByIdAndUpdate(doc._id, {
@@ -90,7 +82,6 @@ router.post('/', authMiddleware, upload.single('file'), async (req, res) => {
     }
 });
 
-// DELETE a document
 router.delete('/:id', authMiddleware, async (req, res) => {
     try {
         const doc = await Document.findOneAndDelete({ _id: req.params.id, uploadedBy: req.user.id });
@@ -101,7 +92,6 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// GET stats
 router.get('/stats', authMiddleware, async (req, res) => {
     try {
         const total = await Document.countDocuments({ uploadedBy: req.user.id });

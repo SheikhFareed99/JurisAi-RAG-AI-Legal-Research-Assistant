@@ -12,8 +12,9 @@ router.post('/', authMiddleware, async (req, res) => {
 
         const doc = await Document.findOne({ bookName, uploadedBy: req.user.id });
 
+        const namespace = `${req.user.id}_${bookName}`;
         const fastapiRes = await axios.post(`${process.env.FASTAPI_URL}/query`, {
-            book_name: bookName,
+            book_name: namespace,
             query,
             top_k: topK,
         });
@@ -69,9 +70,10 @@ router.get('/stream', authMiddleware, async (req, res) => {
     try {
         const doc = await Document.findOne({ bookName, uploadedBy: req.user.id });
 
+        const namespace = `${req.user.id}_${bookName}`;
         const fastapiRes = await axios.post(
             `${process.env.FASTAPI_URL}/query/stream`,
-            { book_name: bookName, query, top_k: Number(topK) },
+            { book_name: namespace, query, top_k: Number(topK) },
             { responseType: 'stream' }
         );
 

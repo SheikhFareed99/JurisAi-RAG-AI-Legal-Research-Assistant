@@ -115,7 +115,7 @@ export default function Analytics() {
 
     if (isLoading) {
         return (
-            <div className="p-8 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 animate-fade-in">
+            <div className="p-4 sm:p-8 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 animate-fade-in">
                 {[1, 2, 3, 4].map(i => <div key={i} className="skeleton h-24 rounded-xl" />)}
                 <div className="skeleton h-72 rounded-xl col-span-full" />
                 <div className="skeleton h-64 rounded-xl md:col-span-1" />
@@ -125,13 +125,13 @@ export default function Analytics() {
     }
 
     return (
-        <div className="p-8 animate-fade-in space-y-6">
+        <div className="p-4 sm:p-8 animate-fade-in space-y-6">
             <div>
                 <h1 className="section-title">Analytics</h1>
                 <p className="section-subtitle">Live usage data across all your research sessions</p>
             </div>
 
-            <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                 <StatCard icon={MessageSquare} label="Total Queries" value={totalQueries} color="#f0c040" delay={0} />
                 <StatCard icon={FileText} label="Documents Loaded" value={totalDocs} color="#3b82f6" delay={80} />
                 <StatCard icon={Zap} label="Queries This Week" value={thisWeek} color="#10b981" delay={160} />

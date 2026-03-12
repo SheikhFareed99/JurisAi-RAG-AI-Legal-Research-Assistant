@@ -23,8 +23,7 @@ class IngestionPipeline:
 
     def ingest_from_url(self, url: str, book_name: str) -> Dict[str, Any]:
         print(f"Ingesting from URL: {url}")
-        print(f"Book name (namespace): {book_name}")
-        print("=" * 50)
+        print(f"Book name: {book_name}")
 
         parsed = urlparse(url)
         url_path = parsed.path.split("?")[0]
@@ -36,7 +35,7 @@ class IngestionPipeline:
         tmp_file = os.path.join(tmp_dir, f"document{ext}")
 
         try:
-            print(f"Downloading document...")
+            print("Downloading document...")
             response = requests.get(url, timeout=120)
             response.raise_for_status()
             with open(tmp_file, "wb") as f:
@@ -55,7 +54,8 @@ class IngestionPipeline:
             print(f"Generating embeddings for {len(texts_to_embed)} chunks...")
             embeddings = self.embedder.embed_documents(texts_to_embed)
 
-            self.vector_store.upsert_documents(embeddings, chunks_data, namespace=book_name)
+            self.vector_store.upsert_documents(
+                embeddings, chunks_data, namespace=book_name)
 
             stats = {
                 "status": "success",
@@ -67,9 +67,9 @@ class IngestionPipeline:
                 "with_images": sum(1 for c in chunks_data if "image" in c["types"]),
             }
 
-            print(f"\nPipeline completed for book '{book_name}'!")
-            print(f"   Elements: {stats['total_elements']}")
-            print(f"   Chunks:   {stats['total_chunks']}")
+            print(f"Pipeline completed for book '{book_name}'")
+            print(f"Elements: {stats['total_elements']}")
+            print(f"Chunks: {stats['total_chunks']}")
             return stats
 
         finally:

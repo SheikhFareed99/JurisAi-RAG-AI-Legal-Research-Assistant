@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
-import { BookOpen, Plus, Trash2, Loader, CheckCircle, Clock, X, Search, Upload, FileText } from 'lucide-react';
+import { BookOpen, Plus, Trash2, Loader, CheckCircle, Clock, X, Search, Upload, FileText, Info } from 'lucide-react';
 
 const CATEGORIES = ['Case Law', 'Statute', 'Contract', 'Regulation', 'Legal Opinion', 'Other'];
 const BADGE_MAP = {
@@ -73,9 +73,7 @@ function UploadModal({ onClose, onSuccess }) {
                     </button>
                 </div>
 
-                <form onSubmit={submit} className="space-y-4">
-                    {/* Drag & drop zone */}
-                    <div
+                <form onSubmit={submit} className="space-y-4">\n                    <div
                         onClick={() => fileRef.current.click()}
                         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
                         onDragLeave={() => setDragging(false)}
@@ -170,6 +168,7 @@ function UploadModal({ onClose, onSuccess }) {
 export default function DocumentLibrary() {
     const [showModal, setShowModal] = useState(false);
     const [search, setSearch] = useState('');
+    const [showBanner, setShowBanner] = useState(() => !sessionStorage.getItem('JurisAi_lib_banner_dismissed'));
     const queryClient = useQueryClient();
 
     const { data: docs, isLoading } = useQuery({
@@ -193,9 +192,23 @@ export default function DocumentLibrary() {
     ) ?? [];
 
     return (
-        <div className="p-8 animate-fade-in">
+        <div className="p-4 sm:p-8 animate-fade-in">
+            {/* Cold start banner */}
+            {showBanner && (
+                <div className="mb-4 flex items-start gap-3 rounded-lg bg-gold-500/10 border border-gold-500/20 px-4 py-3">
+                    <Info size={18} className="text-gold-400 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gold-400">First-time processing may be slow</p>
+                        <p className="text-xs text-slate-400 mt-0.5">Our AI model may take up to a minute to wake up on the first request. Subsequent operations will be much faster. Please be patient!</p>
+                    </div>
+                    <button onClick={() => { setShowBanner(false); sessionStorage.setItem('JurisAi_lib_banner_dismissed', '1'); }} className="text-slate-500 hover:text-slate-300 transition-colors flex-shrink-0">
+                        <X size={16} />
+                    </button>
+                </div>
+            )}
+
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
                     <h1 className="section-title">Document Library</h1>
                     <p className="section-subtitle">

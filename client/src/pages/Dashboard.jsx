@@ -49,17 +49,17 @@ export default function Dashboard() {
     const mins = timeSaved % 60;
 
     return (
-        <div className="p-8 animate-fade-in">
+        <div className="p-4 sm:p-8 animate-fade-in">
             {/* Header */}
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-slate-100">
+            <div className="mb-6 sm:mb-8">
+                <h1 className="text-2xl sm:text-3xl font-bold text-slate-100">
                     Good evening, <span className="text-gold-400">{user?.name?.split(' ')[0]}</span> 👋
                 </h1>
                 <p className="text-slate-400 mt-1">Your legal research intelligence dashboard</p>
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6 sm:mb-8">
                 <StatCard icon={BookOpen} label="Documents Indexed" value={docStats?.ingested ?? '—'} sub={`${docStats?.total ?? 0} total uploaded`} color="gold" />
                 <StatCard icon={MessageSquare} label="Research Queries" value={historyData?.totalQueries ?? '—'} sub="All time" color="blue" />
                 <StatCard icon={Clock} label="Time Saved" value={hours > 0 ? `${hours}h ${mins}m` : `${mins}m`} sub="vs manual research" color="green" />
@@ -67,7 +67,7 @@ export default function Dashboard() {
             </div>
 
             {/* Quick search */}
-            <div className="card mb-8" style={{ background: 'linear-gradient(135deg, rgba(22,42,84,0.9) 0%, rgba(15,32,64,0.95) 100%)' }}>
+            <div className="card mb-6 sm:mb-8" style={{ background: 'linear-gradient(135deg, rgba(22,42,84,0.9) 0%, rgba(15,32,64,0.95) 100%)' }}>
                 <div className="flex items-center gap-3 mb-4">
                     <Zap size={18} className="text-gold-400" />
                     <h2 className="text-lg font-semibold text-slate-100">Quick Research</h2>

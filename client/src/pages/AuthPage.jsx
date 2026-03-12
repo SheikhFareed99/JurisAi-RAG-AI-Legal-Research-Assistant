@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
 import { Scale, Eye, EyeOff, Loader } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AuthPage() {
-    const [mode, setMode] = useState('login');
+    const [searchParams] = useSearchParams();
+    const [mode, setMode] = useState(searchParams.get('mode') === 'register' ? 'register' : 'login');
     const [form, setForm] = useState({ name: '', email: '', password: '' });
     const [showPw, setShowPw] = useState(false);
     const [loading, setLoading] = useState(false);

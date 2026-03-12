@@ -3,7 +3,6 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// Register
 router.post('/register', async (req, res) => {
     try {
         const { name, email, password } = req.body;
@@ -26,7 +25,6 @@ router.post('/register', async (req, res) => {
     }
 });
 
-// Login
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -49,7 +47,6 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// Get current user
 router.get('/me', require('../middleware/auth'), async (req, res) => {
     try {
         const user = await User.findById(req.user.id).select('-password');

@@ -17,9 +17,7 @@ _ocr_reader = None
 def get_ocr_reader():
     global _ocr_reader
     if _ocr_reader is None:
-        print("Loading EasyOCR model (first time may download ~100MB)...")
         _ocr_reader = easyocr.Reader(["en"], gpu=False)
-        print("EasyOCR ready")
     return _ocr_reader
 
 
@@ -96,11 +94,13 @@ class DocumentLoader:
 
                 if shape.has_table:
                     table = shape.table
-                    header = " | ".join(cell.text for cell in table.rows[0].cells)
+                    header = " | ".join(
+                        cell.text for cell in table.rows[0].cells)
                     sep = " | ".join("---" for _ in table.rows[0].cells)
                     rows = [header, sep]
                     for row in list(table.rows)[1:]:
-                        rows.append(" | ".join(cell.text for cell in row.cells))
+                        rows.append(" | ".join(
+                            cell.text for cell in row.cells))
                     table_md = "\n".join(rows)
                     tables.append(table_md)
 

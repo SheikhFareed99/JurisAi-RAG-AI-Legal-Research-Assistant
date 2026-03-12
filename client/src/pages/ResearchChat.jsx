@@ -4,17 +4,17 @@ import api from '../lib/api';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import toast from 'react-hot-toast';
-import { Send, Scale, ChevronDown, ExternalLink, BookOpen, Loader, Trash2 } from 'lucide-react';
+import { Send, Scale, ChevronDown, ExternalLink, BookOpen, Loader, Trash2, Info, X } from 'lucide-react';
 
 const STORAGE_KEY = 'JurisAi_chat_state';
 
 function SourceBadge({ source, index }) {
-    const pct = Math.round(source.score * 100);
+    const page = source.page ? `Page ${source.page}` : null;
     return (
         <div className="p-3 bg-navy-800/60 rounded-lg border border-navy-600 hover:border-gold-500/30 transition-colors">
             <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-semibold text-gold-400">Source [{index + 1}]</span>
-                <span className="text-xs text-slate-500 bg-navy-700 px-2 py-0.5 rounded-full">{pct}% relevance</span>
+                {page && <span className="text-xs text-slate-400 bg-navy-700 px-2 py-0.5 rounded-full">{page}</span>}
             </div>
             <p className="text-xs text-slate-400 leading-relaxed line-clamp-4">{source.text}</p>
         </div>
@@ -46,9 +46,9 @@ function ChatBubble({ msg }) {
                 </div>
                 {!msg.streaming && msg.sources?.length > 0 && (
                     <div className="flex gap-1.5 flex-wrap mt-1">
-                        {msg.sources.map((_, i) => (
+                        {msg.sources.map((src, i) => (
                             <span key={i} className="text-xs bg-gold-500/10 text-gold-400 border border-gold-500/20 px-2 py-0.5 rounded-full">
-                                [{i + 1}]
+                                {src.page ? `p.${src.page}` : `[${i + 1}]`}
                             </span>
                         ))}
                         <span className="text-xs text-slate-500">{msg.sources.length} source{msg.sources.length > 1 ? 's' : ''} cited</span>
@@ -65,6 +65,7 @@ export default function ResearchChat() {
     const [input, setInput] = useState('');
     const [streaming, setStreaming] = useState(false);
     const [activeSources, setActiveSources] = useState([]);
+    const [showBanner, setShowBanner] = useState(() => !sessionStorage.getItem('JurisAi_chat_banner_dismissed'));
     const bottomRef = useRef(null);
     const abortRef = useRef(null);
 
@@ -135,7 +136,6 @@ export default function ResearchChat() {
         setMessages(m => [...m, { role: 'assistant', content: '', sources: [], streaming: true }]);
 
         const token = localStorage.getItem('JurisAi_token');
-        // Call the Express API directly on port 5000 (same as axios baseURL)
         const url = `https://jurisai-rag-ai-legal-research-assistant.onrender.com/api/query/stream?bookName=${encodeURIComponent(selectedDoc.bookName)}&query=${encodeURIComponent(userQuery)}&topK=5`;
 
         const controller = new AbortController();
@@ -235,20 +235,20 @@ export default function ResearchChat() {
     return (
         <div className="h-full flex">
             <div className="flex-1 flex flex-col min-w-0">
-                <div className="px-6 py-4 border-b border-navy-700 flex items-center gap-4 bg-navy-900/50 flex-shrink-0">
-                    <Scale size={20} className="text-gold-400 flex-shrink-0" />
+                <div className="px-3 sm:px-6 py-3 sm:py-4 border-b border-navy-700 flex flex-wrap items-center gap-2 sm:gap-4 bg-navy-900/50 flex-shrink-0">
+                    <Scale size={20} className="text-gold-400 flex-shrink-0 hidden sm:block" />
                     <div className="flex-1 min-w-0">
-                        <h1 className="font-semibold text-slate-100">Legal Research Chat</h1>
-                        <p className="text-xs text-slate-500">Answers are cited directly from the selected document</p>
+                        <h1 className="font-semibold text-slate-100 text-sm sm:text-base">Legal Research Chat</h1>
+                        <p className="text-xs text-slate-500 hidden sm:block">Answers are cited directly from the selected document</p>
                     </div>
                     {messages.length > 0 && (
                         <button onClick={clearChat} className="text-slate-500 hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-red-500/10" title="Clear chat">
                             <Trash2 size={15} />
                         </button>
                     )}
-                    <div className="relative flex-shrink-0">
+                    <div className="relative w-full sm:w-auto sm:flex-shrink-0 order-last sm:order-none">
                         <select
-                            className="input py-2 pr-8 text-sm appearance-none cursor-pointer min-w-[200px]"
+                            className="input py-2 pr-8 text-sm appearance-none cursor-pointer w-full sm:min-w-[200px]"
                             value={selectedDoc?.bookName || ''}
                             onChange={(e) => {
                                 const doc = docs?.find(d => d.bookName === e.target.value);
@@ -266,7 +266,21 @@ export default function ResearchChat() {
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-5">
+                    {/* Cold start banner */}
+                    {showBanner && (
+                        <div className="flex items-start gap-3 rounded-lg bg-gold-500/10 border border-gold-500/20 px-4 py-3">
+                            <Info size={18} className="text-gold-400 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gold-400">First query may be slow</p>
+                                <p className="text-xs text-slate-400 mt-0.5">Our AI model may take up to a minute to respond on the first query as it wakes up. After that, responses will be much faster.</p>
+                            </div>
+                            <button onClick={() => { setShowBanner(false); sessionStorage.setItem('JurisAi_chat_banner_dismissed', '1'); }} className="text-slate-500 hover:text-slate-300 transition-colors flex-shrink-0">
+                                <X size={16} />
+                            </button>
+                        </div>
+                    )}
+
                     {!selectedDoc && messages.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-center animate-fade-in">
                             <div className="w-16 h-16 rounded-2xl bg-gold-500/10 border border-gold-500/20 flex items-center justify-center mb-4">
@@ -303,7 +317,7 @@ export default function ResearchChat() {
                 </div>
 
                 {selectedDoc && messages.length <= 1 && (
-                    <div className="px-6 pb-3 flex gap-2 flex-wrap flex-shrink-0">
+                    <div className="px-3 sm:px-6 pb-3 flex gap-2 flex-wrap flex-shrink-0">
                         {suggestions.map((s) => (
                             <button key={s} onClick={() => setInput(s)}
                                 className="text-xs bg-navy-800 border border-navy-600 hover:border-gold-500/40 text-slate-400 hover:text-slate-200 px-3 py-1.5 rounded-full transition-all">
@@ -313,7 +327,7 @@ export default function ResearchChat() {
                     </div>
                 )}
 
-                <div className="px-6 py-4 border-t border-navy-700 flex-shrink-0">
+                <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-navy-700 flex-shrink-0">
                     <form onSubmit={sendMessage} className="flex gap-3">
                         <input
                             value={input}
@@ -334,7 +348,7 @@ export default function ResearchChat() {
             </div>
 
             {activeSources.length > 0 && (
-                <div className="w-72 xl:w-80 border-l border-navy-700 bg-navy-900/50 flex flex-col flex-shrink-0">
+                <div className="hidden lg:flex w-72 xl:w-80 border-l border-navy-700 bg-navy-900/50 flex-col flex-shrink-0">
                     <div className="px-4 py-4 border-b border-navy-700 flex items-center gap-2">
                         <ExternalLink size={15} className="text-gold-400" />
                         <span className="font-medium text-sm text-slate-200">Document Sources</span>

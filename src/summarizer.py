@@ -40,7 +40,8 @@ Make it detailed and searchable — prioritize findability over brevity.
 SEARCHABLE DESCRIPTION:"""
         try:
             if not self.api_key:
-                raise RuntimeError("OPENROUTER_API_KEY is not configured for summarizer.")
+                raise RuntimeError(
+                    "OPENROUTER_API_KEY is not configured for summarizer.")
 
             headers = {
                 "Authorization": f"Bearer {self.api_key}",
@@ -54,12 +55,14 @@ SEARCHABLE DESCRIPTION:"""
                 "temperature": 0,
                 "max_tokens": 1024,
             }
-            resp = requests.post("https://openrouter.ai/api/v1/chat/completions", json=payload, headers=headers, timeout=60)
+            resp = requests.post("https://openrouter.ai/api/v1/chat/completions",
+                                 json=payload, headers=headers, timeout=60)
             resp.raise_for_status()
             data = resp.json()
             return data["choices"][0]["message"]["content"]
         except Exception as e:
-            print(f"[OPENROUTER][SUMMARY] FAILED. type={type(e)}, detail={repr(e)}")
+            print(
+                f"[OPENROUTER][SUMMARY] FAILED. type={type(e)}, detail={repr(e)}")
             raise
 
     def summarize_chunk(self, chunk_data: dict) -> str:
@@ -77,10 +80,10 @@ SEARCHABLE DESCRIPTION:"""
                 has.append(f"{len(tables)} table(s)")
             if images:
                 has.append(f"{len(images)} image(s)")
-            print(f"     AI summary created ({', '.join(has)})")
+            print(f"AI summary created")
             return summary
         except Exception as e:
-            print(f"     AI summary failed ({e}), using fallback")
+            print(f"AI summary failed, using fallback")
             fallback = text[:500]
             if tables:
                 fallback += f" [Contains {len(tables)} table(s)]"
@@ -89,14 +92,11 @@ SEARCHABLE DESCRIPTION:"""
             return fallback
 
     def summarize_all(self, chunks_data: List[dict]) -> List[dict]:
-        print("Generating AI summaries for mixed-content chunks...")
+        print("Generating AI summaries")
         total = len(chunks_data)
-
         for i, chunk in enumerate(chunks_data):
-            print(f"   Chunk {i + 1}/{total}  types={chunk['types']}")
+            print(f"Chunk {i + 1}/{total}")
             chunk["enhanced_text"] = self.summarize_chunk(chunk)
 
-        text_only = sum(1 for c in chunks_data if c["types"] == ["text"])
-        mixed = total - text_only
-        print(f"Summaries done -- {text_only} text-only, {mixed} AI-enhanced")
+        print(f"Summaries completed")
         return chunks_data
