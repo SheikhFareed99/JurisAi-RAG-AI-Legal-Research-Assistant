@@ -6,6 +6,15 @@ load_dotenv()
 PINECONE_API_KEY = os.getenv("pine_corn_api")
 GROQ_API_KEY = os.getenv("groq_api")
 
+# Basic debug info to verify env loading, without exposing full secrets
+if GROQ_API_KEY:
+    print(
+        f"[GROQ][CONFIG] GROQ_API_KEY loaded: len={len(GROQ_API_KEY)}, "
+        f"prefix={GROQ_API_KEY[:5]}, suffix={GROQ_API_KEY[-4:]}"
+    )
+else:
+    print("[GROQ][CONFIG] GROQ_API_KEY is missing or empty")
+
 PINECONE_INDEX_NAME = "smart-classroom"
 PINECONE_CLOUD = "aws"
 PINECONE_REGION = "us-east-1"

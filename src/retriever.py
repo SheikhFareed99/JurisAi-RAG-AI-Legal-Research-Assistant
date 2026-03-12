@@ -64,7 +64,15 @@ class Retriever:
     def __init__(self, embedder: Embedder = None, vector_store: VectorStore = None):
         self.embedder = embedder or Embedder()
         self.vector_store = vector_store or VectorStore()
+        print("[GROQ][RETRIEVER] Initializing Groq client...")
         self.client = Groq(api_key=GROQ_API_KEY)
+        try:
+            # Lightweight test call to validate key in startup logs (no tokens consumed if cached)
+            print(
+                f"[GROQ][RETRIEVER] Client created. Key len={len(GROQ_API_KEY) if GROQ_API_KEY else 'None'}"
+            )
+        except Exception as e:
+            print(f"[GROQ][RETRIEVER] Groq client init error: {repr(e)}")
         print(f"Loading cross-encoder reranker: {RERANKER_MODEL}")
         self.reranker = CrossEncoder(RERANKER_MODEL)
         print("Reranker ready")
@@ -198,6 +206,7 @@ INSTRUCTIONS:
 
         try:
             prompt = f"SYSTEM:\n{SYSTEM_PROMPT}\n\nUSER:\n{user_message}"
+            print("[GROQ][ANSWER] Sending completion request to Groq...")
             response = self.client.chat.completions.create(
                 model=GROQ_MODEL,
                 messages=[
@@ -208,8 +217,9 @@ INSTRUCTIONS:
                 max_tokens=4096,
             )
             answer = _clean_answer(response.choices[0].message.content)
+            print("[GROQ][ANSWER] Groq completion succeeded.")
         except Exception as e:
-            print(f"Answer generation failed: {e}")
+            print(f"[GROQ][ANSWER] Groq completion FAILED. type={type(e)}, detail={repr(e)}")
             answer = "Sorry, I encountered an error generating the answer."
 
         return {

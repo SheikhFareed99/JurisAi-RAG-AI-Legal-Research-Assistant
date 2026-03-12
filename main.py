@@ -129,24 +129,31 @@ INSTRUCTIONS:
             from src.retriever import SYSTEM_PROMPT
             
             def get_llm_stream():
-                client_groq = Groq(api_key=GROQ_API_KEY)
-                stream = client_groq.chat.completions.create(
-                    model=GROQ_MODEL,
-                    messages=[
-                        {"role": "system", "content": SYSTEM_PROMPT},
-                        {"role": "user", "content": user_message},
-                    ],
-                    temperature=0,
-                    max_tokens=4096,
-                    stream=True,
-                )
+                print("[GROQ][STREAM] Initializing Groq streaming call...")
+                try:
+                    client_groq = Groq(api_key=GROQ_API_KEY)
+                    stream = client_groq.chat.completions.create(
+                        model=GROQ_MODEL,
+                        messages=[
+                            {"role": "system", "content": SYSTEM_PROMPT},
+                            {"role": "user", "content": user_message},
+                        ],
+                        temperature=0,
+                        max_tokens=4096,
+                        stream=True,
+                    )
+                    print("[GROQ][STREAM] Groq streaming call created successfully.")
 
-                def groq_stream():
-                    for chunk_delta in stream:
-                        token = chunk_delta.choices[0].delta.content
-                        if token:
-                            yield token
-                return groq_stream()
+                    def groq_stream():
+                        for chunk_delta in stream:
+                            token = chunk_delta.choices[0].delta.content
+                            if token:
+                                yield token
+
+                    return groq_stream()
+                except Exception as e:
+                    print(f"[GROQ][STREAM] Groq streaming init FAILED. type={type(e)}, detail={repr(e)}")
+                    raise
 
             llm_stream = get_llm_stream()
             for token in llm_stream:
