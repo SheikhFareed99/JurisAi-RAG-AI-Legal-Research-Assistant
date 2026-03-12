@@ -1,5 +1,6 @@
 import json
 import errno
+import requests
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -125,83 +126,44 @@ INSTRUCTIONS:
 - End with a concise 'Key Takeaway' in one sentence
 - If documents lack the needed information, clearly state that and do NOT invent any legal information"""
 
-            from groq import Groq
-            from google import genai
-            from src.config import GROQ_API_KEY, GROQ_MODEL, GOOGLE_API_KEY_1, GOOGLE_API_KEY_2, GOOGLE_MODEL
+            from src.config import OPENROUTER_API_KEY, OPENROUTER_MODEL
             from src.retriever import SYSTEM_PROMPT
 
             def get_llm_stream():
+                # For simplicity and reliability, call OpenRouter once and
+                # stream the returned text to the client in small chunks.
+                if not OPENROUTER_API_KEY:
+                    raise RuntimeError("OPENROUTER_API_KEY is not configured.")
+
                 prompt = f"SYSTEM:\n{SYSTEM_PROMPT}\n\nUSER:\n{user_message}"
 
-                if GOOGLE_API_KEY_1:
-                    try:
-                        print(f"[GOOGLE][STREAM] Initializing Gemini stream model={GOOGLE_MODEL} (key_1)...")
-                        client = genai.Client(api_key=GOOGLE_API_KEY_1)
-                        response = client.models.generate_content_stream(
-                            model=GOOGLE_MODEL,
-                            contents=prompt,
-                        )
-                        iterator = iter(response)
-                        first_chunk = next(iterator)
+                headers = {
+                    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                    "Content-Type": "application/json",
+                }
+                payload = {
+                    "model": OPENROUTER_MODEL,
+                    "messages": [
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": user_message},
+                    ],
+                    "temperature": 0,
+                    "max_tokens": 4096,
+                }
 
-                        def g1_stream():
-                            if getattr(first_chunk, "text", None):
-                                yield first_chunk.text
-                            for chunk in iterator:
-                                if getattr(chunk, "text", None):
-                                    yield chunk.text
+                print(f"[OPENROUTER][STREAM] Requesting completion model={OPENROUTER_MODEL}...")
+                resp = requests.post("https://openrouter.ai/api/v1/chat/completions", json=payload, headers=headers, timeout=120)
+                resp.raise_for_status()
+                data = resp.json()
+                full_text = data["choices"][0]["message"]["content"]
+                print("[OPENROUTER][STREAM] Completion received, streaming to client...")
 
-                        print("[GOOGLE][STREAM] Gemini key_1 stream started.")
-                        return g1_stream()
-                    except Exception as e:
-                        print(f"[GOOGLE][STREAM] Gemini key_1 stream FAILED. type={type(e)}, detail={repr(e)}")
+                def stream_text():
+                    chunk_size = 80
+                    for i in range(0, len(full_text), chunk_size):
+                        yield full_text[i : i + chunk_size]
 
-                if GOOGLE_API_KEY_2:
-                    try:
-                        print(f"[GOOGLE][STREAM] Initializing Gemini stream model={GOOGLE_MODEL} (key_2)...")
-                        client = genai.Client(api_key=GOOGLE_API_KEY_2)
-                        response = client.models.generate_content_stream(
-                            model=GOOGLE_MODEL,
-                            contents=prompt,
-                        )
-                        iterator = iter(response)
-                        first_chunk = next(iterator)
-
-                        def g2_stream():
-                            if getattr(first_chunk, "text", None):
-                                yield first_chunk.text
-                            for chunk in iterator:
-                                if getattr(chunk, "text", None):
-                                    yield chunk.text
-
-                        print("[GOOGLE][STREAM] Gemini key_2 stream started.")
-                        return g2_stream()
-                    except Exception as e:
-                        print(f"[GOOGLE][STREAM] Gemini key_2 stream FAILED. type={type(e)}, detail={repr(e)}")
-
-                if GROQ_API_KEY:
-                    print(f"[GROQ][STREAM] Falling back to Groq model={GROQ_MODEL}...")
-                    client_groq = Groq(api_key=GROQ_API_KEY)
-                    stream = client_groq.chat.completions.create(
-                        model=GROQ_MODEL,
-                        messages=[
-                            {"role": "system", "content": SYSTEM_PROMPT},
-                            {"role": "user", "content": user_message},
-                        ],
-                        temperature=0,
-                        max_tokens=4096,
-                        stream=True,
-                    )
-
-                    def groq_stream():
-                        for chunk_delta in stream:
-                            token = chunk_delta.choices[0].delta.content
-                            if token:
-                                yield token
-
-                    return groq_stream()
-
-                raise RuntimeError("No LLM API keys configured.")
+                return stream_text()
 
             llm_stream = get_llm_stream()
             for token in llm_stream:

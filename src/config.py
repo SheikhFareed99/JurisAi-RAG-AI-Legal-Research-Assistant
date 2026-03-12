@@ -4,32 +4,19 @@ from dotenv import load_dotenv
 load_dotenv()
 
 PINECONE_API_KEY = os.getenv("pine_corn_api")
-GROQ_API_KEY = os.getenv("groq_api")
-GOOGLE_API_KEY_1 = os.getenv("google_key_1") or os.getenv("google_api_1")
-GOOGLE_API_KEY_2 = os.getenv("google_key_2") or os.getenv("google_api_2")
 
-# Default Groq model kept for fallback/debug; primary LLM can be Google Gemini.
-GROQ_MODEL = "llama-3.1-8b-instant"
+# OpenRouter configuration (primary and only LLM now)
+OPENROUTER_API_KEY = os.getenv("openrouter_api")
+OPENROUTER_MODEL = os.getenv("openrouter_model") or "meta-llama/llama-3.1-8b-instruct"
 
-# Google Gemini model
-GOOGLE_MODEL = os.getenv("google_model") or "gemini-3-flash-preview"
-# Basic debug info to verify env loading, without exposing full secrets
-if GROQ_API_KEY:
+if OPENROUTER_API_KEY:
     print(
-        f"[GROQ][CONFIG] GROQ_API_KEY loaded: len={len(GROQ_API_KEY)}, "
-        f"prefix={GROQ_API_KEY[:5]}, suffix={GROQ_API_KEY[-4:]}",
-        f"model={GROQ_MODEL}"
+        f"[OPENROUTER][CONFIG] API key loaded: len={len(OPENROUTER_API_KEY)}, "
+        f"prefix={OPENROUTER_API_KEY[:5]}, suffix={OPENROUTER_API_KEY[-4:]}, "
+        f"model={OPENROUTER_MODEL}"
     )
 else:
-    print("[GROQ][CONFIG] GROQ_API_KEY is missing or empty")
-
-if GOOGLE_API_KEY_1:
-    print(
-        f"[GOOGLE][CONFIG] GOOGLE_API_KEY_1 loaded: len={len(GOOGLE_API_KEY_1)}, "
-        f"prefix={GOOGLE_API_KEY_1[:5]}, suffix={GOOGLE_API_KEY_1[-4:]}"
-    )
-else:
-    print("[GOOGLE][CONFIG] GOOGLE_API_KEY_1 is missing or empty")
+    print("[OPENROUTER][CONFIG] OPENROUTER_API_KEY is missing or empty")
 
 PINECONE_INDEX_NAME = "smart-classroom"
 PINECONE_CLOUD = "aws"

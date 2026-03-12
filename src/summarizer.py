@@ -1,13 +1,13 @@
 from typing import List
-from groq import Groq
-from src.config import GROQ_API_KEY, GROQ_MODEL
+import requests
+from src.config import OPENROUTER_API_KEY, OPENROUTER_MODEL
 
 
 class ContentSummarizer:
 
     def __init__(self):
-        self.client = Groq(api_key=GROQ_API_KEY)
-        self.model = GROQ_MODEL
+        self.api_key = OPENROUTER_API_KEY
+        self.model = OPENROUTER_MODEL
 
     def _summarize(self, text: str, tables: List[str], images: List[str]) -> str:
         prompt = f"""You are creating a searchable description for document content retrieval.
@@ -38,14 +38,29 @@ Generate a comprehensive, searchable description that covers:
 Make it detailed and searchable — prioritize findability over brevity.
 
 SEARCHABLE DESCRIPTION:"""
+        try:
+            if not self.api_key:
+                raise RuntimeError("OPENROUTER_API_KEY is not configured for summarizer.")
 
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0,
-            max_tokens=1024,
-        )
-        return response.choices[0].message.content
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "model": self.model,
+                "messages": [
+                    {"role": "user", "content": prompt},
+                ],
+                "temperature": 0,
+                "max_tokens": 1024,
+            }
+            resp = requests.post("https://openrouter.ai/api/v1/chat/completions", json=payload, headers=headers, timeout=60)
+            resp.raise_for_status()
+            data = resp.json()
+            return data["choices"][0]["message"]["content"]
+        except Exception as e:
+            print(f"[OPENROUTER][SUMMARY] FAILED. type={type(e)}, detail={repr(e)}")
+            raise
 
     def summarize_chunk(self, chunk_data: dict) -> str:
         text = chunk_data["text"]
