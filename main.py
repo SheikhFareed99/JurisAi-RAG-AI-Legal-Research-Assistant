@@ -1,4 +1,5 @@
 import json
+import errno
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -125,12 +126,61 @@ INSTRUCTIONS:
 - If documents lack the needed information, clearly state that and do NOT invent any legal information"""
 
             from groq import Groq
-            from src.config import GROQ_API_KEY, GROQ_MODEL
+            from google import genai
+            from src.config import GROQ_API_KEY, GROQ_MODEL, GOOGLE_API_KEY_1, GOOGLE_API_KEY_2, GOOGLE_MODEL
             from src.retriever import SYSTEM_PROMPT
-            
+
             def get_llm_stream():
-                print("[GROQ][STREAM] Initializing Groq streaming call...")
-                try:
+                prompt = f"SYSTEM:\n{SYSTEM_PROMPT}\n\nUSER:\n{user_message}"
+
+                if GOOGLE_API_KEY_1:
+                    try:
+                        print(f"[GOOGLE][STREAM] Initializing Gemini stream model={GOOGLE_MODEL} (key_1)...")
+                        client = genai.Client(api_key=GOOGLE_API_KEY_1)
+                        response = client.models.generate_content_stream(
+                            model=GOOGLE_MODEL,
+                            contents=prompt,
+                        )
+                        iterator = iter(response)
+                        first_chunk = next(iterator)
+
+                        def g1_stream():
+                            if getattr(first_chunk, "text", None):
+                                yield first_chunk.text
+                            for chunk in iterator:
+                                if getattr(chunk, "text", None):
+                                    yield chunk.text
+
+                        print("[GOOGLE][STREAM] Gemini key_1 stream started.")
+                        return g1_stream()
+                    except Exception as e:
+                        print(f"[GOOGLE][STREAM] Gemini key_1 stream FAILED. type={type(e)}, detail={repr(e)}")
+
+                if GOOGLE_API_KEY_2:
+                    try:
+                        print(f"[GOOGLE][STREAM] Initializing Gemini stream model={GOOGLE_MODEL} (key_2)...")
+                        client = genai.Client(api_key=GOOGLE_API_KEY_2)
+                        response = client.models.generate_content_stream(
+                            model=GOOGLE_MODEL,
+                            contents=prompt,
+                        )
+                        iterator = iter(response)
+                        first_chunk = next(iterator)
+
+                        def g2_stream():
+                            if getattr(first_chunk, "text", None):
+                                yield first_chunk.text
+                            for chunk in iterator:
+                                if getattr(chunk, "text", None):
+                                    yield chunk.text
+
+                        print("[GOOGLE][STREAM] Gemini key_2 stream started.")
+                        return g2_stream()
+                    except Exception as e:
+                        print(f"[GOOGLE][STREAM] Gemini key_2 stream FAILED. type={type(e)}, detail={repr(e)}")
+
+                if GROQ_API_KEY:
+                    print(f"[GROQ][STREAM] Falling back to Groq model={GROQ_MODEL}...")
                     client_groq = Groq(api_key=GROQ_API_KEY)
                     stream = client_groq.chat.completions.create(
                         model=GROQ_MODEL,
@@ -142,7 +192,6 @@ INSTRUCTIONS:
                         max_tokens=4096,
                         stream=True,
                     )
-                    print("[GROQ][STREAM] Groq streaming call created successfully.")
 
                     def groq_stream():
                         for chunk_delta in stream:
@@ -151,9 +200,8 @@ INSTRUCTIONS:
                                 yield token
 
                     return groq_stream()
-                except Exception as e:
-                    print(f"[GROQ][STREAM] Groq streaming init FAILED. type={type(e)}, detail={repr(e)}")
-                    raise
+
+                raise RuntimeError("No LLM API keys configured.")
 
             llm_stream = get_llm_stream()
             for token in llm_stream:
@@ -161,8 +209,26 @@ INSTRUCTIONS:
 
             yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
+        except GeneratorExit:
+            # Client disconnected — completely normal, just stop.
+            return
+        except OSError as oe:
+            # WinError 10038: client closed the connection (Windows socket error)
+            if getattr(oe, "winerror", None) == 10038:
+                return
+            # Also catch generic "broken pipe" / "connection reset" errors
+            if oe.errno in (errno.EPIPE, errno.ECONNRESET, errno.ECONNABORTED):
+                return
+            print(f"[STREAM] Unexpected OSError: {oe}")
+            return
         except Exception as e:
-            yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
+            # Treat Windows socket-close errors as normal disconnects
+            if "WinError 10038" in str(e):
+                return
+            try:
+                yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
+            except Exception:
+                pass
 
     return StreamingResponse(
         event_generator(),

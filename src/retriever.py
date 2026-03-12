@@ -5,9 +5,13 @@ from collections import defaultdict
 from rank_bm25 import BM25Okapi
 from sentence_transformers import CrossEncoder
 from groq import Groq
+from google import genai
 from src.config import (
     GROQ_API_KEY,
     GROQ_MODEL,
+    GOOGLE_API_KEY_1,
+    GOOGLE_API_KEY_2,
+    GOOGLE_MODEL,
     RERANKER_MODEL,
     KEYWORD_WEIGHT,
     SEMANTIC_WEIGHT,
@@ -64,15 +68,8 @@ class Retriever:
     def __init__(self, embedder: Embedder = None, vector_store: VectorStore = None):
         self.embedder = embedder or Embedder()
         self.vector_store = vector_store or VectorStore()
-        print("[GROQ][RETRIEVER] Initializing Groq client...")
-        self.client = Groq(api_key=GROQ_API_KEY)
-        try:
-            # Lightweight test call to validate key in startup logs (no tokens consumed if cached)
-            print(
-                f"[GROQ][RETRIEVER] Client created. Key len={len(GROQ_API_KEY) if GROQ_API_KEY else 'None'}"
-            )
-        except Exception as e:
-            print(f"[GROQ][RETRIEVER] Groq client init error: {repr(e)}")
+        # Keep Groq client available as a fallback, but prefer Google Gemini for answers.
+        self.client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
         print(f"Loading cross-encoder reranker: {RERANKER_MODEL}")
         self.reranker = CrossEncoder(RERANKER_MODEL)
         print("Reranker ready")
@@ -204,22 +201,50 @@ INSTRUCTIONS:
 - End with a concise 'Key Takeaway' in one sentence
 - If documents lack the needed information, clearly state that and do NOT invent any legal information"""
 
-        try:
-            prompt = f"SYSTEM:\n{SYSTEM_PROMPT}\n\nUSER:\n{user_message}"
-            print("[GROQ][ANSWER] Sending completion request to Groq...")
-            response = self.client.chat.completions.create(
-                model=GROQ_MODEL,
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": user_message},
-                ],
-                temperature=0,
-                max_tokens=4096,
-            )
-            answer = _clean_answer(response.choices[0].message.content)
-            print("[GROQ][ANSWER] Groq completion succeeded.")
-        except Exception as e:
-            print(f"[GROQ][ANSWER] Groq completion FAILED. type={type(e)}, detail={repr(e)}")
+        prompt = f"SYSTEM:\n{SYSTEM_PROMPT}\n\nUSER:\n{user_message}"
+
+        # Prefer Google Gemini (Azure-safe), fallback to Groq only if configured.
+        answer = None
+        if GOOGLE_API_KEY_1:
+            try:
+                print(f"[GOOGLE][ANSWER] Calling Gemini model={GOOGLE_MODEL} (key_1)...")
+                client = genai.Client(api_key=GOOGLE_API_KEY_1)
+                resp = client.models.generate_content(model=GOOGLE_MODEL, contents=prompt)
+                if resp and resp.text:
+                    answer = _clean_answer(resp.text)
+                    print("[GOOGLE][ANSWER] Gemini key_1 succeeded.")
+            except Exception as e:
+                print(f"[GOOGLE][ANSWER] Gemini key_1 FAILED. type={type(e)}, detail={repr(e)}")
+
+        if not answer and GOOGLE_API_KEY_2:
+            try:
+                print(f"[GOOGLE][ANSWER] Calling Gemini model={GOOGLE_MODEL} (key_2)...")
+                client = genai.Client(api_key=GOOGLE_API_KEY_2)
+                resp = client.models.generate_content(model=GOOGLE_MODEL, contents=prompt)
+                if resp and resp.text:
+                    answer = _clean_answer(resp.text)
+                    print("[GOOGLE][ANSWER] Gemini key_2 succeeded.")
+            except Exception as e:
+                print(f"[GOOGLE][ANSWER] Gemini key_2 FAILED. type={type(e)}, detail={repr(e)}")
+
+        if not answer and self.client:
+            try:
+                print(f"[GROQ][ANSWER] Falling back to Groq model={GROQ_MODEL}...")
+                response = self.client.chat.completions.create(
+                    model=GROQ_MODEL,
+                    messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": user_message},
+                    ],
+                    temperature=0,
+                    max_tokens=4096,
+                )
+                answer = _clean_answer(response.choices[0].message.content)
+                print("[GROQ][ANSWER] Groq fallback succeeded.")
+            except Exception as e:
+                print(f"[GROQ][ANSWER] Groq fallback FAILED. type={type(e)}, detail={repr(e)}")
+
+        if not answer:
             answer = "Sorry, I encountered an error generating the answer."
 
         return {

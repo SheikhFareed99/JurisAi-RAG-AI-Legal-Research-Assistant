@@ -5,8 +5,14 @@ load_dotenv()
 
 PINECONE_API_KEY = os.getenv("pine_corn_api")
 GROQ_API_KEY = os.getenv("groq_api")
+GOOGLE_API_KEY_1 = os.getenv("google_key_1") or os.getenv("google_api_1")
+GOOGLE_API_KEY_2 = os.getenv("google_key_2") or os.getenv("google_api_2")
 
-GROQ_MODEL="llama-3.1-8b-instant"
+# Default Groq model kept for fallback/debug; primary LLM can be Google Gemini.
+GROQ_MODEL = "llama-3.1-8b-instant"
+
+# Google Gemini model
+GOOGLE_MODEL = os.getenv("google_model") or "gemini-3-flash-preview"
 # Basic debug info to verify env loading, without exposing full secrets
 if GROQ_API_KEY:
     print(
@@ -16,6 +22,14 @@ if GROQ_API_KEY:
     )
 else:
     print("[GROQ][CONFIG] GROQ_API_KEY is missing or empty")
+
+if GOOGLE_API_KEY_1:
+    print(
+        f"[GOOGLE][CONFIG] GOOGLE_API_KEY_1 loaded: len={len(GOOGLE_API_KEY_1)}, "
+        f"prefix={GOOGLE_API_KEY_1[:5]}, suffix={GOOGLE_API_KEY_1[-4:]}"
+    )
+else:
+    print("[GOOGLE][CONFIG] GOOGLE_API_KEY_1 is missing or empty")
 
 PINECONE_INDEX_NAME = "smart-classroom"
 PINECONE_CLOUD = "aws"
