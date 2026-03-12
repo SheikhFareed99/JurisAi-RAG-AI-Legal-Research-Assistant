@@ -172,3 +172,13 @@ INSTRUCTIONS:
             "X-Accel-Buffering": "no",
         },
     )
+@app.get("/groqtest")
+def groqtest():
+    from groq import Groq
+    client = Groq(api_key=GROQ_API_KEY)
+
+    r = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[{"role":"user","content":"Hello"}]
+    )
+    return {"msg": r.choices[0].message.content}

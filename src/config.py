@@ -6,11 +6,13 @@ load_dotenv()
 PINECONE_API_KEY = os.getenv("pine_corn_api")
 GROQ_API_KEY = os.getenv("groq_api")
 
+GROQ_MODEL="llama-3.1-8b-instant"
 # Basic debug info to verify env loading, without exposing full secrets
 if GROQ_API_KEY:
     print(
         f"[GROQ][CONFIG] GROQ_API_KEY loaded: len={len(GROQ_API_KEY)}, "
-        f"prefix={GROQ_API_KEY[:5]}, suffix={GROQ_API_KEY[-4:]}"
+        f"prefix={GROQ_API_KEY[:5]}, suffix={GROQ_API_KEY[-4:]}",
+        f"model={GROQ_MODEL}"
     )
 else:
     print("[GROQ][CONFIG] GROQ_API_KEY is missing or empty")
@@ -22,7 +24,6 @@ PINECONE_REGION = "us-east-1"
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 EMBEDDING_DIMENSION = 384
 
-GROQ_MODEL="llama-3.1-8b-instant"
 
 CHUNK_MAX_CHARS = 1000
 CHUNK_NEW_AFTER = 800
