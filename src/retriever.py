@@ -28,6 +28,7 @@ IDENTITY:
 - If someone asks your name, who made you, or who built you, begin your response with the exact token [OFF_TOPIC] followed by: "I am JurisAi, an AI-powered legal research assistant created by Sheikh Fareed."
 - If someone asks a question unrelated to law or the uploaded documents (e.g., general knowledge, math, coding, personal questions), begin your response with the exact token [OFF_TOPIC] followed by: "I am JurisAi, a legal research assistant made by Sheikh Fareed. I can only answer questions related to your uploaded legal documents. Please ask a legal question about your documents."
 - IMPORTANT: The [OFF_TOPIC] token is a machine-readable flag. Always include it at the very start when the question is not about the uploaded legal documents. Never include [OFF_TOPIC] in answers about document content.
+- CRITICAL: For off-topic questions, your ENTIRE response must be ONLY the [OFF_TOPIC] token followed by the single sentence above. Do NOT repeat yourself. Do NOT add any additional text. Stop generating immediately after the single off-topic sentence.
 
 ABSOLUTE RULES — violating any is unacceptable:
 
@@ -60,6 +61,27 @@ ABSOLUTE RULES — violating any is unacceptable:
 
 def _tokenize(text: str) -> List[str]:
     return re.findall(r"\w+", text.lower())
+
+
+OFF_TOPIC_RESPONSE = "I am JurisAi, a legal research assistant made by Sheikh Fareed. I can only answer questions related to your uploaded legal documents. Please ask a legal question about your documents."
+
+
+def _truncate_off_topic(text: str) -> str:
+    """Detect and truncate repetitive off-topic responses."""
+    cleaned = text.strip()
+ 
+    if cleaned.startswith("[OFF_TOPIC]"):
+        cleaned = cleaned[len("[OFF_TOPIC]"):].lstrip()
+
+    off_topic_markers = [
+        "I am JurisAi, a legal research assistant ",
+        "I can only answer questions related to your uploaded legal documents",
+        "Please upload a relevant legal document to answer your question",
+    ]
+    marker_count = sum(cleaned.count(m) for m in off_topic_markers)
+    if marker_count >= 3:
+        return "[OFF_TOPIC] " + OFF_TOPIC_RESPONSE
+    return text
 
 
 def _clean_answer(text: str) -> str:
@@ -233,6 +255,7 @@ INSTRUCTIONS:
             data = resp.json()
             content = data["choices"][0]["message"]["content"]
             answer = _clean_answer(content)
+            answer = _truncate_off_topic(answer)
             pass
         except Exception as e:
             pass

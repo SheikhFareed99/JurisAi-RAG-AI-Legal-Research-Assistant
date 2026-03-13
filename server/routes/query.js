@@ -95,15 +95,17 @@ router.get('/stream', authMiddleware, async (req, res) => {
 
         fastapiRes.data.on('end', async () => {
             try {
-                await QueryHistory.create({
-                    userId: req.user.id,
-                    bookName,
-                    documentTitle: doc?.title || bookName,
-                    query,
-                    answer: fullAnswer,
-                    sources,
-                    topK: Number(topK),
-                });
+                if (fullAnswer) {
+                    await QueryHistory.create({
+                        userId: req.user.id,
+                        bookName,
+                        documentTitle: doc?.title || bookName,
+                        query,
+                        answer: fullAnswer,
+                        sources,
+                        topK: Number(topK),
+                    });
+                }
             } catch (e) {
                 console.error('History save error:', e.message);
             }

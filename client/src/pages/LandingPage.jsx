@@ -151,7 +151,7 @@ export default function LandingPage() {
 
             {/* Footer */}
             <footer className="border-t border-navy-700 py-8 text-center text-slate-500 text-xs sm:text-sm px-4">
-                © 2026 JurisAi · Built with FastAPI · Pinecone · Groq · React
+                © 2026 JurisAi · Built with FastAPI · Pinecone · OpenRouter · React
             </footer>
         </div>
     );

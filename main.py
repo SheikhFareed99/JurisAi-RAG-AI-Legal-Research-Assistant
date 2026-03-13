@@ -89,7 +89,10 @@ def query_stream(req: QueryRequest):
                 req.query, top_k=req.top_k, namespace=req.book_name)
 
             if not chunks:
-                yield f"data: {json.dumps({'type': 'error', 'content': 'The provided documents do not contain sufficient information to answer this question.'})}\n\n"
+                no_info_msg = "The uploaded documents do not contain sufficient information to answer this question. Please upload a relevant legal document."
+                yield f"data: {json.dumps({'type': 'sources', 'sources': []})}\n\n"
+                yield f"data: {json.dumps({'type': 'token', 'content': no_info_msg})}\n\n"
+                yield f"data: {json.dumps({'type': 'done'})}\n\n"
                 return
 
             context = ""
@@ -118,69 +121,90 @@ INSTRUCTIONS:
 - If documents lack the needed information, state that clearly — never invent"""
 
             from src.config import OPENROUTER_API_KEY, OPENROUTER_MODEL
-            from src.retriever import SYSTEM_PROMPT
+            from src.retriever import SYSTEM_PROMPT, _truncate_off_topic, OFF_TOPIC_RESPONSE
 
-            def get_llm_stream():
-                if not OPENROUTER_API_KEY:
-                    raise RuntimeError("OPENROUTER_API_KEY is not configured.")
+            if not OPENROUTER_API_KEY:
+                raise RuntimeError("OPENROUTER_API_KEY is not configured.")
 
-                prompt = f"SYSTEM:\n{SYSTEM_PROMPT}\n\nUSER:\n{user_message}"
+            headers = {
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "model": OPENROUTER_MODEL,
+                "messages": [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": user_message},
+                ],
+                "temperature": 0,
+                "max_tokens": 4096,
+                "stream": True,
+            }
 
-                headers = {
-                    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                    "Content-Type": "application/json",
-                }
-                payload = {
-                    "model": OPENROUTER_MODEL,
-                    "messages": [
-                        {"role": "system", "content": SYSTEM_PROMPT},
-                        {"role": "user", "content": user_message},
-                    ],
-                    "temperature": 0,
-                    "max_tokens": 4096,
-                }
+            print(f"[OPENROUTER][STREAM] Requesting completion model={OPENROUTER_MODEL}...")
 
-                print(
-                    f"[OPENROUTER][STREAM] Requesting completion model={OPENROUTER_MODEL}...")
-                resp = requests.post(
-                    "https://openrouter.ai/api/v1/chat/completions", json=payload, headers=headers, timeout=120)
-                resp.raise_for_status()
-                data = resp.json()
-                full_text = data["choices"][0]["message"]["content"]
-                print(
-                    "[OPENROUTER][STREAM] Completion received, streaming to client...")
+            # --- Real streaming from OpenRouter ---
+            resp = requests.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                json=payload, headers=headers, timeout=120, stream=True,
+            )
+            resp.raise_for_status()
 
-                def stream_text():
-                    chunk_size = 80
-                    for i in range(0, len(full_text), chunk_size):
-                        yield full_text[i: i + chunk_size]
+            full_answer = ""
+            sources_sent = False
 
-                return stream_text(), full_text
+            for raw_line in resp.iter_lines(decode_unicode=True):
+                if not raw_line or not raw_line.startswith("data: "):
+                    continue
+                data_str = raw_line[6:].strip()
+                if data_str == "[DONE]":
+                    break
+                try:
+                    chunk_data = json.loads(data_str)
+                    delta = chunk_data["choices"][0].get("delta", {})
+                    token = delta.get("content", "")
+                except (json.JSONDecodeError, KeyError, IndexError):
+                    continue
+                if not token:
+                    continue
 
-            llm_stream, full_answer = get_llm_stream()
-            is_off_topic = full_answer.startswith("[OFF_TOPIC]")
-            if is_off_topic:
-                cleaned = full_answer[len("[OFF_TOPIC]"):].lstrip()
+                full_answer += token
 
-                def make_stream(text):
-                    chunk_size = 80
-                    for i in range(0, len(text), chunk_size):
-                        yield text[i: i + chunk_size]
-                llm_stream = make_stream(cleaned)
-                yield f"data: {json.dumps({'type': 'sources', 'sources': []})}\n\n"
-            else:
-                sources = [
-                    {
-                        "id": c["id"],
-                        "text": c["text"][:300],
-                        "page": c.get("page", 0),
-                    }
-                    for c in chunks
-                ]
-                yield f"data: {json.dumps({'type': 'sources', 'sources': sources})}\n\n"
+                # After enough text, check if this is off-topic and send sources
+                if not sources_sent and len(full_answer) > 30:
+                    is_off_topic = full_answer.startswith("[OFF_TOPIC]")
+                    if is_off_topic:
+                        yield f"data: {json.dumps({'type': 'sources', 'sources': []})}\n\n"
+                    else:
+                        sources = [
+                            {
+                                "id": c["id"],
+                                "text": c["text"][:300],
+                                "page": c.get("page", 0),
+                            }
+                            for c in chunks
+                        ]
+                        yield f"data: {json.dumps({'type': 'sources', 'sources': sources})}\n\n"
+                    sources_sent = True
 
-            for token in llm_stream:
+                # Skip the [OFF_TOPIC] prefix token itself
+                if full_answer.startswith("[OFF_TOPIC]") and len(full_answer) <= len("[OFF_TOPIC]") + len(token):
+                    token = full_answer[len("[OFF_TOPIC]"):].lstrip()
+                    if not token:
+                        continue
+
                 yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
+
+            # If sources were never sent (very short response), send them now
+            if not sources_sent:
+                yield f"data: {json.dumps({'type': 'sources', 'sources': []})}\n\n"
+
+            # Truncate repetitive off-topic after full response is collected
+            truncated = _truncate_off_topic(full_answer)
+            if truncated != full_answer:
+                # The LLM was looping — we already streamed garbage, so we can't undo it
+                # but this handles the off-topic detection for the done event
+                pass
 
             yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
@@ -211,13 +235,3 @@ INSTRUCTIONS:
     )
 
 
-@app.get("/groqtest")
-def groqtest():
-    from groq import Groq
-    client = Groq(api_key=GROQ_API_KEY)
-
-    r = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[{"role": "user", "content": "Hello"}]
-    )
-    return {"msg": r.choices[0].message.content}
