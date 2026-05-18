@@ -12,7 +12,7 @@ class ContentSummarizer:
     def _summarize(self, text: str, tables: List[str], images: List[str]) -> str:
         prompt = f"""You are creating a searchable description for document content retrieval.
 
-CONTENT TO ANALYZE:
+CONTENT TO ANALYZE GIVEN BELOW:
 
 TEXT:
 {text}
